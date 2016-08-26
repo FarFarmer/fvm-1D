@@ -12,8 +12,8 @@ u[4] = 1.0
 
 v = np.linspace(1,1,res)
 
-dx = 0.25
-dt = 0.125
+dx = 0.25*3
+dt = 0.125*3
 
 N = res
 ind = np.arange(-0.5,N-0.5,1)  # the x locations for the groups
