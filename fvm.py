@@ -103,6 +103,11 @@ def generateStencilMat(polyOrder):
 
     return L
 
+## Oscillation matrix.
+#
+# \f[
+#   \Sigma_{mn}=\sum_{r=1}^p\int\frac{\partial^r x^m}{\partial x^r}\frac{\partial^r x^n}{\partial x^r} \mathrm{d} x
+# \f]
 def generateOscillMat(polyOrder, dx):
 
     S = np.zeros(shape=(polyOrder,polyOrder))
@@ -113,7 +118,7 @@ def generateOscillMat(polyOrder, dx):
             s_mn = 0.0
             for r in range(1,polyOrder+1):
 
-                scale = (2.0/dx)**r # 2/dx or 1/dx ??
+                scale = (1.0/dx)**r # 2/dx or 1/dx ??
                 
                 if r <= m and r <= n:
                     x_exp = m-r + n-r # exponent after multiplying derivatives
@@ -151,86 +156,110 @@ def calcOmega(polyCoeffs, S, polyOrder):
 
     return omega
 
+# Generates polynomial coefficients.
 
-def advectWENO(u,v,dt,dx,polyOrder):
+# More details.
+# \f[
+# \f{pmatrix}
+# \hat{w}_0^{k} \\
+# \hat{w}_1^{k} \\
+# \hat{w}_2^{k}
+# \f}
+# = \mathbf{L}_{k}^{-1}
+# \f{pmatrix}
+# \overline{\phi}_{i-1}\\
+# \overline{\phi}_{i}\\
+# \overline{\phi}_{i+1}
+# \f}
+# \f]
+def calcPolyCoeffs(polyOrder, f, i, Linv):
 
-    numCells = len(u)
+    # we take into account polyOrder+1 polynomials, each of them with
+    # polyOrder+1 coefficients
     
-    u_right = np.linspace(0,0,numCells)
-    u_left = np.copy(u_right)
+    numCells = len(f)    
+    polyCoeffs = np.ndarray(shape=(polyOrder+1,polyOrder+1))
+    for j in range(polyOrder+1):
 
-    u_out = np.copy(u)
+        # ids is used again to avoid if-else blocks regarding values on
+        # the boundary; it clamps the indices to [0:numCells-1]
+        ids = list(range(i-polyOrder+j,i+j+1))
+        for k in range(len(ids)):
+            ids[k] = max(0, min(ids[k], numCells-1))
+
+        # scale = 2 because in the reference frame, dx = 2
+        scale = 2.0
+        phi = np.array([scale*f[x] for x in ids])
+        polyCoeffs[j] = Linv[j].dot(phi)
+
+    return polyCoeffs
+
+def advectWENO(f,u,dt,dx,polyOrder):
+
+    numCells = len(f)
+    
+    f_right = np.linspace(0,0,numCells)
+    f_left = np.copy(f_right)
+
+    f_out = np.copy(f)
 
     S = generateOscillMat(polyOrder, dx)
     Linv = np.linalg.inv(generateStencilMat(polyOrder))
 
-    for i in range(len(v)):
+    for i in range(len(u)):
 
         # clamp velocity on the boundary
-        ip = i+1 if i < len(v)-1 else i
+        ip = i+1 if i < len(u)-1 else i
         im = i-1 if i > 0 else 0
 
         # interpolate velocity at face between cells i and i+1
-        v_right = (v[i]+v[ip])/2.0
+        u_right = (u[i]+u[ip])/2.0
         # interpolate velocity at face between cells i-1 and i
-        v_left = (v[i]+v[im])/2.0
+        u_left = (u[i]+u[im])/2.0
 
+        #
         # only take into account fluxes out of the cell
         # this is done becuase we know the WENO reconstruction only at the
         # current cell and we use it in the upwind scheme (i.e., the current
         # cell is the "upwind" one only if velocity goes out of it)
         # to avoid mutliple if-else blocks, each flux is multiplied by the
         # corresponding left/rigth flag
-        right = 0.0 if v_right < 0.0 else 1.0
-        left = 0.0 if v_left > 0.0 else 1.0
+        # 
+        right = 0.0 if u_right < 0.0 else 1.0
+        left = 0.0 if u_left > 0.0 else 1.0
 
-        # we take into account polyOrder+1 polynomials, each of them with
-        # polyOrder+1 coefficients
-        polyCoeffs = np.ndarray(shape=(polyOrder+1,polyOrder+1))
-        for j in range(polyOrder+1):
-
-            # ids is used again to avoid if-else blocks regarding values on
-            # the boundary; it clamps the indices to [0:numCells-1]
-            ids = list(range(i-polyOrder+j,i+j+1))
-            for k in range(len(ids)):
-                ids[k] = max(0, min(ids[k], numCells-1))
-
-            # scale = 2 because in the reference frame, dx = 2
-            scale = 2.0
-            phi = np.array([scale*u[x] for x in ids])
-            polyCoeffs[j] = Linv[j].dot(phi)
-
+        polyCoeffs = calcPolyCoeffs(polyOrder, f, i, Linv)
         omegas = calcOmega(polyCoeffs, S, polyOrder)
         wenoCoeffs = np.transpose(polyCoeffs).dot(omegas)
 
         for k in range(0,polyOrder+1):
-            u_right[i] += v_right*((1.0)**k)*wenoCoeffs[k]
-            u_left[i] += v_left*((-1.0)**k)*wenoCoeffs[k]
+            f_right[i] += u_right*((1.0)**k)*wenoCoeffs[k]
+            f_left[i] += u_left*((-1.0)**k)*wenoCoeffs[k]
 
-        u_right[i] *= right
-        u_left[i] *= left
+        f_right[i] *= right
+        f_left[i] *= left
 
     residual = np.linspace(0,0,numCells+1)
 
-    for i in range(len(u)):
+    for i in range(len(f)):
         # integrate the fluxes
-        flux = u_right[i]*dt/dx
+        flux = f_right[i]*dt/dx
         residual[i+1] += flux
         residual[i] -= flux
 
-    for i in range(len(u)):
-        u_out[i] += residual[i]
+    for i in range(len(f)):
+        f_out[i] += residual[i]
         
     residual = np.linspace(0,0,numCells+1)
         
-    for i in range(len(u)):
+    for i in range(len(f)):
         # integrate the fluxes
-        flux = - u_left[i]*dt/dx
+        flux = - f_left[i]*dt/dx
         residual[i] += flux
         residual[i+1] -= flux
 
-    for i in range(len(u)):
-        u_out[i] += residual[i+1]
+    for i in range(len(f)):
+        f_out[i] += residual[i+1]
     
-    return u_out
+    return f_out
 
