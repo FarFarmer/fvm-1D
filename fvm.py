@@ -9,6 +9,8 @@ import sys
 import re
 import math
 
+cellWidth = 2
+
 ## Simple upwind scheme.
 #
 # More details.
@@ -146,7 +148,7 @@ def calcOmega(polyCoeffs, S, polyOrder):
 
         states = S.dot(polyCoeffs[j][1:])
         sigma = states.dot(polyCoeffs[j][1:])
-            
+
         la = 1000 if j == int(polyOrder/2) else 1 #!! what about odd degrees?
         omega[j] = la/((1.e-5 + sigma)**4)
         sumOmega += omega[j]
@@ -187,8 +189,7 @@ def calcPolyCoeffs(polyOrder, f, i, Linv):
         for k in range(len(ids)):
             ids[k] = max(0, min(ids[k], numCells-1))
 
-        # scale = 2 because in the reference frame, dx = 2
-        scale = 2.0
+        scale = cellWidth
         phi = np.array([scale*f[x] for x in ids])
         polyCoeffs[j] = Linv[j].dot(phi)
 
