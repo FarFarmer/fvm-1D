@@ -6,10 +6,10 @@ polyOrder = 2
 spaceOrder = polyOrder+1
 res = 6
 f = np.linspace(0,0,res)
-f[2] = 1.0
+#f[2] = 1.0
 f[3] = 1.0
 u = np.linspace(1,1,res)
-dx = 1
+dx = 2
 org = -0.5
 k = 3 # central cell
 
@@ -18,32 +18,45 @@ Linv = np.linalg.inv(L)
 S = fvm.generateOscillMat(polyOrder, dx)
 
 polyCoeffs = fvm.calcPolyCoeffs(polyOrder, f, k, Linv)
+polyRes = 101
+polyIdxExtent = int(polyOrder/2+0.5)
+polyExtent = (polyIdxExtent+0.5)*dx
 
-ind = np.arange(-0.5,res-0.5,1)
-width = 1
-plt.bar(ind, f, width, color='r')
-plt.xlim(left=-0.5,right=res-0.5)
+polyIdx = 0
+
+for i in range(k-polyIdxExtent,k+polyIdxExtent+1):
+
+    print(i)
+
+    x0 = -polyExtent+i*dx # start x-coordinate of the polynomial
+    x1 =  polyExtent+i*dx # end x-coordinate of the polynomial
+
+    print(x0,x1)
+
+    # x_k = k*dx
+    # print(x_k)
+    
+    x = np.linspace(x0,x1,polyRes)
+    y = np.linspace(0,0,polyRes)
+
+    for j in range(polyRes):
+        for p in range(spaceOrder):
+            y[j] += polyCoeffs[polyIdx][p]*(x[j]-6)**p
+
+    # x[:] = x[:]+x_k
+    
+    plt.plot(x, y)
+    polyIdx += 1
+
+
+ind = np.arange(-0.5*dx,(res-0.5)*dx,dx)
+plt.bar(ind, f, dx, color='r')
+#plt.xlim(left=-0.5,right=res-0.5)
 plt.xlabel('x')
 plt.ylabel('f')
 plt.title('reconstruction')
 plt.grid(True)
-
-polyIdxExtent = int(polyOrder/2+0.5)
-polyExtent = (polyIdxExtent+0.5)*dx
-
-x0 = -polyExtent # start x-coordinate of the polynomial
-x1 = polyExtent # end x-coordinate of the polynomial
-
-for i in range(k-polyIdxExtent,k+polyIdxExtent+1):
-    x_k = i*dx
     
-    x = np.linspace(x0,x1,100)
-    y = np.linspace(0,1,100)
-
-    x[:] = x[:]+x_k
-    
-    plt.plot(x, y)
-
 plt.show()
 
 
