@@ -4,10 +4,11 @@ import fvm
 
 polyOrder = 2
 spaceOrder = polyOrder+1
-res = 6
+res = 10
 f = np.linspace(0,0,res)
 f[2] = 1.0
-f[3] = 1.0
+f[3] = 0.75
+f[3] = 0.85
 
 u = np.linspace(1,1,res)
 dx = 1
@@ -59,14 +60,19 @@ for j in range(polyRes):
         
 plt.plot(x, y, '--', linewidth=2)
 
+y_right_k_face = 0
+for p in range(spaceOrder):
+    y_right_k_face += wenoCoeffs[p]*((dx/2)*fvm.cellWidth/dx)**p
 
+
+plt.plot(np.linspace(-0.5*dx,(res-0.5)*dx,2),y_right_k_face*np.linspace(1,1,2),
+         linestyle='--', color='red')   
     
-
 ind = np.arange(-0.5*dx,(res-0.5)*dx,dx)
 plt.bar(ind, f, dx, color='r')
 plt.xlabel('x')
 plt.ylabel('f')
 plt.title('reconstruction')
 plt.grid(True)
-    
+
 plt.show()

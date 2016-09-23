@@ -4,15 +4,15 @@ import fvm
 
 polyOrder = 2
 
-res = 128 #input
+res = 100 #input
 
 f = np.linspace(0,0,res)
-f[4] = 1.0
+f[2] = 1.0
 
 u = np.linspace(1,1,res)
 
-dx = 0.25*3
-dt = 0.125*3
+dx = 0.5
+dt = 0.25
 
 N = res
 ind = np.arange(-0.5,N-0.5,1)  # the x locations for the groups
@@ -42,7 +42,6 @@ while True:
     # ax.set_xticks(ind + width/2.0)
     # ax.set_xticklabels([str(idx) for idx in range(N)])
 
-    
     f_new = fvm.advectWENO(f,u,dt,dx,polyOrder)
     # f_new = fvm.advect(f,u,dt,dx)
     rects = ax.bar(ind, f_new, width, color='r')

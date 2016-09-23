@@ -242,9 +242,15 @@ def advectWENO(f,u,dt,dx,polyOrder):
 
     residual = np.linspace(0,0,numCells+1)
 
+    res = len(f_out)
+    
     for i in range(len(f)):
         # integrate the fluxes
         flux = f_right[i]*dt/dx
+
+        if i+1 < res and f_out[i+1] + flux < 0 or f_out[i] - flux < 0:
+            flux = 0
+
         residual[i+1] += flux
         residual[i] -= flux
 
@@ -256,6 +262,10 @@ def advectWENO(f,u,dt,dx,polyOrder):
     for i in range(len(f)):
         # integrate the fluxes
         flux = - f_left[i]*dt/dx
+
+        if f_out[i] + flux < 0 or i+1 < res and f_out[i+1] - flux < 0:
+            flux = 0
+
         residual[i] += flux
         residual[i+1] -= flux
 
