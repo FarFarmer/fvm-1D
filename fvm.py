@@ -59,6 +59,7 @@ def advect(u,v,dt,dx):
 
     for i in range(len(u)):
         flux = u_right[i] * dt / dx
+
         residual[i+1] += flux
         residual[i] -= flux
 
@@ -69,6 +70,7 @@ def advect(u,v,dt,dx):
 
     for i in range(len(u)):
         flux = - u_left[i] * dt / dx
+        
         residual[i] += flux
         residual[i+1] -= flux
 
@@ -143,14 +145,15 @@ def calcOmega(polyCoeffs, S, polyOrder):
     
     omega = np.linspace(0.0,0.0,polyOrder+1)
     sumOmega = 0.0
-
+    r = 4
+    epsilon = 1.e-5
     for j in range(polyOrder+1):
 
         states = S.dot(polyCoeffs[j][1:])
         sigma = states.dot(polyCoeffs[j][1:])
 
         la = 1000 if j == int(polyOrder/2) else 1 #!! what about odd degrees?
-        omega[j] = la/((1.e-5 + sigma)**4)
+        omega[j] = la/((epsilon + sigma)**r)
         sumOmega += omega[j]
 
     if sumOmega > 0:
@@ -248,6 +251,7 @@ def advectWENO(f,u,dt,dx,polyOrder):
         # integrate the fluxes
         flux = f_right[i]*dt/dx
 
+        # hack
         if i+1 < res and f_out[i+1] + flux < 0 or f_out[i] - flux < 0:
             flux = 0
 
@@ -263,6 +267,7 @@ def advectWENO(f,u,dt,dx,polyOrder):
         # integrate the fluxes
         flux = - f_left[i]*dt/dx
 
+        # hack
         if f_out[i] + flux < 0 or i+1 < res and f_out[i+1] - flux < 0:
             flux = 0
 
@@ -271,6 +276,8 @@ def advectWENO(f,u,dt,dx,polyOrder):
 
     for i in range(len(f)):
         f_out[i] += residual[i+1]
-    
+
+    print(f_out[0:10])
+        
     return f_out
 

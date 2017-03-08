@@ -8,12 +8,26 @@ res = 10
 f = np.linspace(0,0,res)
 f[2] = 1.0
 f[3] = 0.75
-f[3] = 0.85
+f[4] = 0.85
 
+# # this shows problems
+# f[0] = 0
+# f[1] = 0
+# f[2] = 8.52760128e-02
+# f[3] = 5.11621972e-01                                                
+# f[4] = 3.96826532e-01
+
+f[0] = 5.2 #/5.5;
+f[1] = 5.5 #/5.5;
+f[2] = 5.0 #/5.5;
+f[3] = 1.3 #/5.5;
+f[4] = 1.1 #/5.5;
+f[5] = 0.8 #/5.5;
+
+  
 u = np.linspace(1,1,res)
 dx = 1
-org = -0.5
-k = 3 # central cell
+k = 2 # central cell
 
 L = fvm.generateStencilMat(polyOrder)
 Linv = np.linalg.inv(L)
@@ -21,6 +35,11 @@ polyCoeffs = fvm.calcPolyCoeffs(polyOrder, f, k, Linv)
 S = fvm.generateOscillMat(polyOrder, dx)
 omegas = fvm.calcOmega(polyCoeffs, S, polyOrder)
 wenoCoeffs = np.transpose(polyCoeffs).dot(omegas)
+
+print("wenoCoeffs:")
+print(wenoCoeffs)
+print("omegas:")
+print(omegas)
 
 polyRes = 101
 
@@ -66,10 +85,10 @@ for p in range(spaceOrder):
 
 
 plt.plot(np.linspace(-0.5*dx,(res-0.5)*dx,2),y_right_k_face*np.linspace(1,1,2),
-         linestyle='--', color='red')   
+         linestyle='--', color='black')   
     
 ind = np.arange(-0.5*dx,(res-0.5)*dx,dx)
-plt.bar(ind, f, dx, color='r')
+plt.bar(ind, f, dx, fill=False)
 plt.xlabel('x')
 plt.ylabel('f')
 plt.title('reconstruction')

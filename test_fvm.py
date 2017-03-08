@@ -11,7 +11,7 @@ f[2] = 1.0
 
 u = np.linspace(1,1,res)
 
-dx = 0.5
+dx = 1.5
 dt = 0.25
 
 N = res
