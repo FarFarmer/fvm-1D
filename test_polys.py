@@ -26,7 +26,7 @@ f[5] = 0.8 #/5.5;
 
   
 u = np.linspace(1,1,res)
-dx = 1
+dx = 2
 k = 2 # central cell
 
 L = fvm.generateStencilMat(polyOrder)
@@ -36,10 +36,12 @@ S = fvm.generateOscillMat(polyOrder, dx)
 omegas = fvm.calcOmega(polyCoeffs, S, polyOrder)
 wenoCoeffs = np.transpose(polyCoeffs).dot(omegas)
 
-print("wenoCoeffs:")
-print(wenoCoeffs)
-print("omegas:")
-print(omegas)
+# print("polyCoeffs:");
+# print(polyCoeffs);
+# print("wenoCoeffs:")
+# print(wenoCoeffs)
+# print("omegas:")
+# print(omegas)
 
 polyRes = 101
 
@@ -61,10 +63,14 @@ for i in range(k-polyIdxExtent,k+polyIdxExtent+1):
         for p in range(spaceOrder):
             y[j] += polyCoeffs[polyIdx][p]*((x[j]-x_k)*fvm.cellWidth/dx)**p
     
+    for p in range(spaceOrder):
+        print("w = " + str(polyCoeffs[polyIdx][p]) +" offset = " + str(x_k) + " scale = " + str(fvm.cellWidth/dx) + " p = " + str(p))
+
+    print("")
+
     plt.plot(x, y)
     polyIdx += 1
 
-    
 # p-space values
 x0 = -polyExtent+k*dx # start x-coordinate of the polynomial
 x1 =  polyExtent+k*dx # end x-coordinate of the polynomial
@@ -76,6 +82,10 @@ y = np.linspace(0,0,polyRes)
 for j in range(polyRes):
     for p in range(spaceOrder):
         y[j] += wenoCoeffs[p]*((x[j]-x_k)*fvm.cellWidth/dx)**p
+
+print("weno coeffs")
+for p in range(spaceOrder):
+    print("w = " + str(wenoCoeffs[p]) +" offset = " + str(x_k) + " scale = " + str(fvm.cellWidth/dx) + " p = " + str(p))    
         
 plt.plot(x, y, '--', linewidth=2)
 
